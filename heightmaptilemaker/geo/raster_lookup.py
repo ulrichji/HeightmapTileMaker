@@ -51,9 +51,11 @@ class RasterBand:
         return elevation_value
 
 class RasterFile:
-    def __init__(self, raster_file_path):
+    def __init__(self, raster_file_path, nodata_value=None):
         self.file_path = raster_file_path
         self.dataset = gdal.Open(raster_file_path)
+        self.nodata_value = None
+        self.gdal_nodata_value = -32767.0
         self.raster_bands = [RasterBand(band, self.dataset.GetGeoTransform()) for band in
                                 (self.dataset.GetRasterBand(i+1) for i in range(self.dataset.RasterCount))]
 
@@ -70,13 +72,16 @@ class RasterFile:
     def getElevationAt(self, geo_x, geo_y):
         for raster_band in self.raster_bands:
             if(raster_band.locationInBounds(geo_x, geo_y)):
-                return raster_band.getElevationAt(geo_x, geo_y)
-        return None
+                elevation = raster_band.getElevationAt(geo_x, geo_y)
+                if elevation > self.gdal_nodata_value:
+                    return elevation
+        return self.nodata_value
 
 # TODO: Handle NOVALUE etc
 class RasterLookup:
-    def __init__(self, file_list):
-        self.raster_files = [RasterFile(f) for f in file_list]
+    def __init__(self, file_list, nodata_value=None):
+        self.raster_files = [RasterFile(f, nodata_value) for f in file_list]
+        self.nodata_value = nodata_value
 
     def locationInBounds(self, geo_x, geo_y):
         for raster_file in self.raster_files:
@@ -87,5 +92,7 @@ class RasterLookup:
     def getElevationAtPosition(self, geo_x, geo_y):
         for raster_file in self.raster_files:
             if(raster_file.locationInBounds(geo_x, geo_y)):
-                return raster_file.getElevationAt(geo_x, geo_y)
-        return None
+                elevation = raster_file.getElevationAt(geo_x, geo_y)
+                if elevation is not self.nodata_value:
+                    return elevation
+        return self.nodata_value
