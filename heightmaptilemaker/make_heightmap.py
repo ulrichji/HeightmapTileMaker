@@ -2,6 +2,10 @@ from geo import geo_utils
 from geo import raster_lookup
 from heightmap import heightmap
 
+import progress.default_printer
+import progress.timed_callback
+from progress.progress import Progress
+
 import argparse
 
 if __name__ == '__main__':
@@ -34,19 +38,20 @@ if __name__ == '__main__':
 
     print('Got the following GDAL geo transform parameters: ' + str(heightmap_geo_transform.transform_parameters))
 
-    print('Loading geo files')
+    progress_printer = progress.default_printer.Printer()
+
+    progress_printer(Progress(0, 'Loading geo files'))
     geo_tiff_files = arguments.geo_tiff_files
     raster_lookup = raster_lookup.RasterLookup(geo_tiff_files)
 
-    print('Creating heightmap')
-    heightmap = heightmap.Heightmap().createFromRaster(raster_lookup, heightmap_geo_transform, heightmap_size)
-
-    print('Stats: ' + str(heightmap.getStatistics()))
+    heightmap = heightmap.Heightmap().createFromRaster(raster_lookup, heightmap_geo_transform, heightmap_size, progress.timed_callback.TimedCallback(progress_printer, start_at=0.05, end_at=0.9))
 
     if arguments.output is not None:
-        print('Saving heightmap to ' + str(arguments.output))
+        progress_printer(Progress(0.9, 'Saving heightmap to ' + str(arguments.output)))
         output_file = arguments.output
         heightmap.writeToFile(output_file)
+
+    progress_printer.finish()
 
     if arguments.plot is not None:
         import matplotlib.pyplot as plt
@@ -54,3 +59,5 @@ if __name__ == '__main__':
         print('Plotting image')
         plt.imshow(heightmap.getHeightmap())
         plt.show()
+
+    print('Stats: ' + str(heightmap.getStatistics()))

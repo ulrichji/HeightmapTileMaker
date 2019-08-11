@@ -1,5 +1,7 @@
 import geo.geo_utils
 import geo.raster_lookup
+from progress.null_callback import NullCallback
+from progress.progress import Progress
 
 import glob
 import numpy as np
@@ -13,11 +15,16 @@ class Heightmap:
         self.out_of_bounds_count = 0
         self.nodata_count = 0
 
-    def createFromRaster(self, raster_lookup, geo_transform, heightmap_size):
-        self.pixels = [0 for i in range(heightmap_size[0] * heightmap_size[1])]
+    def createFromRaster(self,
+                         raster_lookup,
+                         geo_transform,
+                         heightmap_size,
+                         progress_callback=NullCallback()):
+        pixel_count = heightmap_size[0] * heightmap_size[1]
+        self.pixels = [0 for i in range(pixel_count)]
 
         for y in range(heightmap_size[1]):
-            for x in range(heightmap_size[1]):
+            for x in range(heightmap_size[0]):
                 geo_pos = geo_transform.transformPixelLocationToGeoLocation(x, y)
                 pixel_index = x + y*heightmap_size[0]
                 if raster_lookup.locationInBounds(geo_pos[0], geo_pos[1]):
@@ -30,6 +37,10 @@ class Heightmap:
                 else:
                     self.out_of_bounds_count += 1
 
+                progress_callback(Progress(progress=pixel_index + 1,
+                    message="Creating heightmap",
+                    max_progress=heightmap_size[0] * heightmap_size[1],))
+
         raster_matrix = np.array(self.pixels).reshape(heightmap_size)
         self.heightmap = raster_matrix
 
@@ -40,8 +51,10 @@ class Heightmap:
 
     def getStatistics(self):
         return {
-            'out_of_bounds_percentage': 100.0 * float(self.out_of_bounds_count) / self.pixelCount(),
-            'nodata_percentage': 100.0 * float(self.nodata_count) / self.pixelCount()
+            'out_of_bounds_percentage':
+                100.0 * float(self.out_of_bounds_count) / self.pixelCount(),
+            'nodata_percentage':
+                100.0 * float(self.nodata_count) / self.pixelCount()
         }
 
     def loadFromFile(self, file_name):
