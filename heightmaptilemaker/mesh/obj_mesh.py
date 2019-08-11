@@ -30,7 +30,7 @@ class ObjFace:
 class ObjMesh:
     def __init__(self, mesh, object_name="Mesh"):
         self.object_name = object_name
-        self.vertex_list = mesh.getVerticesPositions()
+        self.vertex_list = [(vertex[0], vertex[2], vertex[1]) for vertex in mesh.getVerticesPositions()]
         self.uv_coord_list = mesh.getVerticesNormals()
         self.normals_list = mesh.getVerticesNormals()
 
