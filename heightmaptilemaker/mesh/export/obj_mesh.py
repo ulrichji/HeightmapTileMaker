@@ -87,6 +87,7 @@ class ObjMesh:
             vertices_normals_text, faces_text))
 
     def save(self, path):
+        obj_text = self.getObjText()
         f = open(path, 'w')
-        f.write(self.getObjText())
+        f.write(obj_text)
         f.close()
