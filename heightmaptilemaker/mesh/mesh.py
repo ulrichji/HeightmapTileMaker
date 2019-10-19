@@ -80,11 +80,20 @@ class Mesh:
     def addVertex(self, vertex):
         self.vertices.append(vertex)
 
+    def getVertex(self, index):
+        return self.vertices[index]
+
     def addFace(self, face):
         self.faces.append(face)
 
+    def getFace(self, index):
+        return self.faces[index]
+
     def getVertices(self):
         return self.vertices
+
+    def vertexCount(self):
+        return len(self.vertices)
 
     def getVerticesPositions(self):
         return [vertex.position for vertex in self.vertices]
@@ -99,6 +108,9 @@ class Mesh:
 
     def getFaces(self):
         return [[index for index in face.indices] for face in self.faces]
+
+    def faceCount(self):
+        return len(self.faces)
 
     def scale(self, scale):
         for vertex in self.vertices:
