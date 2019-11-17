@@ -1,6 +1,7 @@
-from polygon_boolean_operator import PolygonBooleanOperator
+from .polygon_boolean_operator import PolygonBooleanOperator
 
 from enum import Enum
+from math import sqrt
 
 class IntersectionType(Enum):
     NOT_AN_INTERSECTION=0
@@ -75,22 +76,82 @@ class PolygonEdge:
         x4,y4 = (other_edge.to_point.pos[0], other_edge.to_point.pos[1])
 
         t_dividend = ((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))
-        t_divisor = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4))
-
         u_dividend = -(((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3)))
-        u_divisor = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4))
 
-        if abs(t_divisor) <= 0 or abs(u_divisor) <= 0:
+        tu_divisor = ((y3 - y4) * (x1 - x2)) - ((y1 - y2) * (x3 - x4))
+
+        if abs(tu_divisor) <= 1e-9:
             return None
 
-        t = t_dividend / t_divisor
-        u = u_dividend / u_divisor
+        t = t_dividend / tu_divisor
+        u = u_dividend / tu_divisor
 
-        if t < 0 or t > 1 or u < 0 or u > 1:
+        if t <= 1e-9 or t > 1 - 1e-9 or u < 1e-9 or u >= 1 - 1e-9:
             return None
 
-        intersection_point = (x1 + (t * (x2 - x1)), y1 + (t * (y2 - y1)))
+
+        intersection_point = (x1 + (t * (x2 - x1)), y1 + (t * (y2 - y1)), 0)
         return (intersection_point, t)
+
+    # Source: https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
+    #    Title: Line–line intersection
+    #    Author: Wikipedia
+    #    Last edit date: 16 August 2019
+    def computeIntersectionForPointInPolygon(self, other_edge):
+        x1,y1 = (self.from_point.pos[0], self.from_point.pos[1])
+        x2,y2 = (self.to_point.pos[0], self.to_point.pos[1])
+        x3,y3 = (other_edge.from_point.pos[0], other_edge.from_point.pos[1])
+        x4,y4 = (other_edge.to_point.pos[0], other_edge.to_point.pos[1])
+
+        t_dividend = ((x1 - x3) * (y3 - y4)) - ((y1 - y3) * (x3 - x4))
+        u_dividend = -(((x1 - x2) * (y1 - y3)) - ((y1 - y2) * (x1 - x3)))
+
+        tu_divisor = ((y3 - y4) * (x1 - x2)) - ((y1 - y2) * (x3 - x4))
+
+        if abs(tu_divisor) <= 1e-9:
+            return None
+
+        t = t_dividend / tu_divisor
+        u = u_dividend / tu_divisor
+
+        is_upward = y3 < y4
+        is_downward = y3 > y4
+
+        if is_upward:
+            if t <= 1e-9 or t >= 1 - 1e-9 or u <= -1e-9 or u >= 1 - 1e-9:
+                return None
+        elif is_downward:
+            if t < 1e-9 or t >= 1 - 1e-9 or u <= 1e-9 or u >= 1 + 1e-9:
+                return None
+        else:
+            return None
+
+        intersection_point = (x1 + (t * (x2 - x1)), y1 + (t * (y2 - y1)), 0)
+        return (intersection_point, t)
+
+    def isPointLeft(point):
+        P0 = self.from_point.pos
+        P1 = self.to_point.pos
+        P2 = point
+
+        return ((P1[0] - P0[0]) * (P2[1] - P0[1]) - (P2[0] -  P0[0]) * (P1[1] - P0[1]))
+
+    def intersectsPoint(self, point):
+        x0,y0 = (point.pos[0], point.pos[1])
+        x1,y1 = (self.from_point.pos[0], self.from_point.pos[1])
+        x2,y2 = (self.to_point.pos[0], self.to_point.pos[1])
+
+        dividend = sqrt((y2 - y1)**2 + (x2 - x1)**2)
+        if dividend <= 1e-9:
+            return False
+
+        divisor = (y2 - y1)*x0 - (x2 - x1)*y0 + x2*y1 + y2*x1
+        distance = abs(divisor / dividend)
+
+        if distance < 1e-9:
+            return True
+
+        return False
 
 class GreinerHormannPolygon:
     def __init__(self, points_list=[]):
@@ -101,21 +162,61 @@ class GreinerHormannPolygon:
 
     def remakeFromEdges(self, edge_list):
         edge_points = [[edge.from_point, *edge.getIntersectionsAsPoints()] for edge in edge_list]
+        #print("Edge points:", ','.join('(' + ','.join(str(pt) for pt in edge_point) + ')' for edge_point in edge_points))
         self.points = [point for edge in edge_points for point in edge]
+        #print('Points:', ','.join(str(pt) for pt in self.points))
+        #print("Edges first: ", ', '.join('(' + ', '.join((str(edge.from_point), str(edge.to_point))) + ')' for edge in self.edges))
         self.edges = self.__getEdgesFromPoints()
-
+        #print("Edges after: ", ', '.join('(' + ', '.join((str(edge.from_point), str(edge.to_point))) + ')' for edge in self.edges))
         self.__setupPointsOrder()
 
     def isPointInside(self, point):
-        ray_from_point = PolygonPoint(point)
+        #cn = 0; # the  crossing number counter
+
+        ## loop through all edges of the polygon
+        #for i in range(len(self.points)):
+        #    current_vertex = self.points[i]
+        #    next_vertex = self.points[(i + 1) % len(self.points)]
+
+        #    if (((current_vertex.pos[1] <= point[1]) and (next_vertex.pos[1] > point[1])) or ((current_vertex.pos[1] > point[1]) and (next_vertex.pos[1] <= point[1]))):
+        #        vt = (point[1] - current_vertex.pos[1]) / (next_vertex.pos[1] - current_vertex.pos[1])
+        #        if point[1] < current_vertex.pos[1] + vt * (next_vertex.pos[0] - current_vertex.pos[0]):
+        #            cn += 1
+
+        #return cn % 2 == 1
+        ray_from_point = PolygonPoint((point[0], point[1]))
         # This has length of polygon width to maximize the floating point resolution
-        ray_to_point = PolygonPoint((point[0] + self.__computePolygonWidth(), point[1]))
+        max_x_point = max(p.pos[0] for p in self.points)
+        ray_to_point = PolygonPoint((max_x_point + 1, point[1]))
 
         ray = PolygonEdge(ray_from_point, ray_to_point)
-        ray_intersections = (ray.computeIntersection(edge) for edge in self.edges)
-        intersection_count = sum(0 if intersection is None else 1 for intersection in ray_intersections)
+        ray_intersections = (ray.computeIntersectionForPointInPolygon(edge) for edge in self.edges)
+        ray_intersections_count = sum(1 for intersection in ray_intersections if intersection)
+        is_point_inside = ray_intersections_count % 2 == 1
 
-        return intersection_count % 2 == 1
+        return is_point_inside
+
+        #vertex_intersections = [ray.intersectsPoint(p) for p in self.points]
+        #edge_intersection_count = sum(0 if intersection is None else 1 for intersection in ray_intersections)
+        #vertex_intersection_count = sum(a for a in vertex_intersections)
+        ##if edge_intersection_count % 2 == 1 or vertex_intersection_count > 0:
+        ##    print()
+        ##    print(edge_intersection_count, vertex_intersection_count)
+        ##    print()
+        #intersection_count = edge_intersection_count + vertex_intersection_count
+        ##print('Points: ', ','.join(str(pt) for pt in self.points))
+        ##print('INts:', vertex_intersections)
+
+        #is_point_inside = intersection_count % 2 == 1
+        ##print("Edge cnt:", len(self.edges), ", edgeint:", edge_intersection_count, ", pointint:", vertex_intersection_count)
+        ##print("Edges: ", ', '.join(', '.join((str(edge.from_point), str(edge.to_point))) for edge in self.edges))
+        ##print("Is point inside:", point, is_point_inside, ", ray:", ray.from_point, ray.to_point, intersection_count)
+
+        #if abs(point[0] - 0.16535) < 0.00005 and abs(point[1] -  0.20472) < 0.00005:
+        #    print(','.join(str(pt) for pt in self.points))
+        #    print(is_point_inside, edge_intersection_count, vertex_intersection_count, len(self.points), ray.from_point, ray.to_point, "     ")
+
+        #return is_point_inside
 
     @staticmethod
     def linkPolygons(first_polygon, second_polygon):
@@ -127,6 +228,7 @@ class GreinerHormannPolygon:
         return self.__createPolygonFromIntersections(other_polygon, boolean_operator)
 
     def __getEdgesFromPoints(self):
+        #print('Points:', ', '.join(str(point) for point in self.points))
         return [PolygonEdge(self.points[i], self.points[(i+1) % len(self.points)]) for i in range(len(self.points))]
 
     def __setupPointsOrder(self):
@@ -206,15 +308,21 @@ class GreinerHormannPolygon:
         result_polygon_points = []
         current_point = intersections[0]
         traversal_direction = TraversalDirection.FORWARD
+        _cnt = 0
         while(any(not intersection.processed for intersection in intersections) or current_point != intersections[0]):
             result_polygon_points.append(current_point.pos)
 
             if current_point.intersection_type.isIntersection():
                 current_point.processed = True
-                current_point.other_polygon_link.processed = True
                 current_point = current_point.other_polygon_link
+                current_point.processed = True
                 traversal_direction = TraversalDirection.FORWARD if current_point.intersection_type == IntersectionType.ENTRY else TraversalDirection.BACKWARDS
 
             current_point = current_point.getNext(traversal_direction)
+            _cnt += 1
+
+            if(_cnt > 1000):
+                print("Fail")
+                return GreinerHormannPolygon(result_polygon_points)
 
         return GreinerHormannPolygon(result_polygon_points)

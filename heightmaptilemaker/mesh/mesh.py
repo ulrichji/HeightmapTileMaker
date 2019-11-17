@@ -8,8 +8,29 @@ class MeshVertex:
         self.uv_coord = uv_coord
         self.normal = normal
 
+    def copy(self):
+        return MeshVertex(self.position, self.uv_coord, self.normal)
+
     def scale(self, scale):
         self.position = (self.position[0] * scale, self.position[1] * scale, self.position[2] * scale)
+
+    def distance(self, other):
+        return self._positionDistance(other) + self._uvDistance(other) + self._normalDistance(other)
+
+    def _positionDistance(self, other):
+        if self.position is not None and other.position is not None:
+            return np.linalg.norm(self.position - other.position)
+        return 0
+
+    def _uvDistance(self, other):
+        if self.uv_coord is not None and other.uv_coord is not None:
+            return np.linalg.norm(self.uv_coord - other.uv_coord)
+        return 0
+
+    def _normalDistance(self, other):
+        if self.normal is not None and other.normal is not None:
+            return np.linalg.norm(self.normal - other.normal)
+        return 0
 
     def getPositionAsJson(self):
         if self.position is None:
@@ -68,6 +89,40 @@ class MeshVertex:
 
         return self
 
+def compareVertices(a, b):
+    for c1, c2 in reversed(zip(a.position, b.position)):
+        if abs(c1 - c2) >= 1e-9:
+            return c1 - c2
+
+    return 0
+
+def compareVerticesWithIndex(a, b):
+    coordinate_pairs = [*zip(a[1].position,b[1].position)]
+    for c1, c2 in reversed(coordinate_pairs):
+        if abs(c1 - c2) >= 1e-9:
+            return c1 - c2
+
+    return 0
+
+def cmpToKey(mycmp):
+    'Convert a cmp= function into a key= function'
+    class K:
+        def __init__(self, obj, *args):
+            self.obj = obj
+        def __lt__(self, other):
+            return mycmp(self.obj, other.obj) < 0
+        def __gt__(self, other):
+            return mycmp(self.obj, other.obj) > 0
+        def __eq__(self, other):
+            return mycmp(self.obj, other.obj) == 0
+        def __le__(self, other):
+            return mycmp(self.obj, other.obj) <= 0
+        def __ge__(self, other):
+            return mycmp(self.obj, other.obj) >= 0
+        def __ne__(self, other):
+            return mycmp(self.obj, other.obj) != 0
+    return K
+
 class MeshFace:
     def __init__(self, indices):
         self.indices = indices
@@ -77,8 +132,17 @@ class Mesh:
         self.vertices = []
         self.faces = []
 
+    def copy(self):
+        return_mesh = Mesh()
+        return_mesh.vertices = [MeshVertex(vertex.position, vertex.uv_coord, vertex.normal) for vertex in self.vertices]
+        return_mesh.faces = [MeshFace([index for index in face.indices]) for face in self.faces]
+
     def addVertex(self, vertex):
         self.vertices.append(vertex)
+        return len(self.vertices) - 1
+
+    def addUniqueVertex(self, vertex):
+        return self.searchVertex(vertex) or self.addVertex(vertex)
 
     def getVertex(self, index):
         return self.vertices[index]
@@ -89,8 +153,20 @@ class Mesh:
     def getFace(self, index):
         return self.faces[index]
 
+    def addFaceFromVertices(self, vertices):
+        indices = [self.addVertex(vertex) for vertex in vertices]
+        self.addFace(MeshFace(indices))
+
     def getVertices(self):
         return self.vertices
+
+    def searchVertex(self, vertex):
+        for i, mesh_vertex in enumerate(self.vertices):
+            points_distance = mesh_vertex.distance(vertex)
+            if points_distance < 1e-9:
+                return i
+
+        return None
 
     def vertexCount(self):
         return len(self.vertices)
@@ -115,6 +191,35 @@ class Mesh:
     def scale(self, scale):
         for vertex in self.vertices:
             vertex.scale(scale)
+
+    def argsortVertices(self):
+        sorted_vertices=sorted(enumerate(self.vertices), key=cmpToKey(compareVerticesWithIndex))
+        indices = [vertex_with_index[0] for vertex_with_index in sorted_vertices]
+        return indices
+
+    def removeDuplicates(self):
+        new_indices = self.argsortVertices()
+        self.vertices = [self.vertices[i].copy() for i in new_indices]
+
+        reverse_index_lookup = [i for i in new_indices]
+        for (i, new_index) in enumerate(new_indices):
+            reverse_index_lookup[new_index] = i
+        for face in self.faces:
+            face.indices = [reverse_index_lookup[i] for i in face.indices]
+
+        duplicates = [False] + [self.vertices[i].distance(self.vertices[i - 1]) == 0 for i in range(1, len(self.vertices))]
+        index_removal_count = np.cumsum(duplicates)
+        new_indices = list(np.arange(0, len(self.vertices)) - index_removal_count)
+
+        self.vertices = [vertex for vertex,dup in zip(self.vertices, duplicates) if not dup]
+
+
+        #print(', '.join('[' + ', '.join(str(i) for i in face.indices) + ']' for face in self.faces))
+        #print('\n')
+        for face in self.faces:
+            face.indices = [i - int(index_removal_count[i]) for i in face.indices]
+
+        #print(', '.join('[' + ', '.join(str(i) for i in face.indices) + ']' for face in self.faces))
 
     def validate(self):
         for face in self.faces:
