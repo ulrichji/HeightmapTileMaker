@@ -7,7 +7,7 @@ from progress.progress import Progress
 
 if __name__ == '__main__':
     print("Generating grid...")
-    grid_mesh = grid.generate((32, 32))
+    grid_mesh = grid.generate((1024, 1024))
     print("Generating hexagon...")
     clip_mesh = getHexagon()
     print("Clipping mesh...")

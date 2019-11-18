@@ -176,11 +176,9 @@ class Mesh:
 
     def getVerticesUVCoords(self):
         return None
-        #return [vertex.uv_coord for vertex in self.vertices]
 
     def getVerticesNormals(self):
         return None
-        #return [vertex.normal for vertex in self.vertices]
 
     def getFaces(self):
         return [[index for index in face.indices] for face in self.faces]
@@ -213,13 +211,8 @@ class Mesh:
 
         self.vertices = [vertex for vertex,dup in zip(self.vertices, duplicates) if not dup]
 
-
-        #print(', '.join('[' + ', '.join(str(i) for i in face.indices) + ']' for face in self.faces))
-        #print('\n')
         for face in self.faces:
             face.indices = [i - int(index_removal_count[i]) for i in face.indices]
-
-        #print(', '.join('[' + ', '.join(str(i) for i in face.indices) + ']' for face in self.faces))
 
     def validate(self):
         for face in self.faces:
