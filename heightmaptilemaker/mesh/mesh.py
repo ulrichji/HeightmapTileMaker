@@ -11,6 +11,12 @@ class MeshVertex:
     def copy(self):
         return MeshVertex(self.position, self.uv_coord, self.normal)
 
+    def deepcopy(self):
+        copied_position = [c for c in self.position] if self.position is not None else None
+        copied_uv_coord = [c for c in self.uv_coord] if self.uv_coord is not None else None
+        copied_normal = [c for c in self.normal] if self.normal is not None else None
+        return MeshVertex(copied_position, copied_uv_coord, copied_normal)
+
     def scale(self, scale):
         self.position = (self.position[0] * scale, self.position[1] * scale, self.position[2] * scale)
 
