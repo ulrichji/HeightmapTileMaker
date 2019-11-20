@@ -2,14 +2,18 @@ from .mesh import MeshFace, MeshVertex
 
 class IndexEdge:
     def __init__(self, first_index, second_index):
-        self.from_index = min(first_index, second_index)
-        self.to_index = max(first_index, second_index)
+        self.from_index = first_index
+        self.to_index = second_index
 
     def __hash__(self):
-        return hash((self.from_index, self.to_index))
+        min_index = min(self.from_index, self.to_index)
+        max_index = max(self.from_index, self.to_index)
+        return hash((min_index, max_index))
 
     def __eq__(self, other):
-        return self.from_index == other.from_index and self.to_index == other.to_index
+        forward_equal = self.from_index == other.from_index and self.to_index == other.to_index
+        reverse_equal = self.to_index == other.from_index and self.from_index == other.to_index
+        return forward_equal or reverse_equal
 
     def __str__(self):
         return str(self.from_index) + ":" + str(self.to_index)
