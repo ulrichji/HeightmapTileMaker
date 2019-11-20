@@ -13,5 +13,6 @@ if __name__ == '__main__':
     print("Clipping mesh...")
     progress_printer = progress.default_printer.Printer()
     hexagon_grid = clipMesh(grid_mesh, clip_mesh, progress_printer)
+    progress_printer.finish()
     print("Saving mesh...")
     hexagon_grid.save('hexagon_grid_mesh.json')

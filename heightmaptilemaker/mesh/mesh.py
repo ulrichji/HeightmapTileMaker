@@ -95,13 +95,6 @@ class MeshVertex:
 
         return self
 
-def compareVertices(a, b):
-    for c1, c2 in reversed(zip(a.position, b.position)):
-        if abs(c1 - c2) >= 1e-9:
-            return c1 - c2
-
-    return 0
-
 def compareVerticesWithIndex(a, b):
     coordinate_pairs = [*zip(a[1].position,b[1].position)]
     for c1, c2 in reversed(coordinate_pairs):
@@ -211,7 +204,7 @@ class Mesh:
         for face in self.faces:
             face.indices = [reverse_index_lookup[i] for i in face.indices]
 
-        duplicates = [False] + [self.vertices[i].distance(self.vertices[i - 1]) == 0 for i in range(1, len(self.vertices))]
+        duplicates = [False] + [self.vertices[i].distance(self.vertices[i - 1]) <= 1e-9 for i in range(1, len(self.vertices))]
         index_removal_count = np.cumsum(duplicates)
         new_indices = list(np.arange(0, len(self.vertices)) - index_removal_count)
 

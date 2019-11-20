@@ -42,7 +42,7 @@ def clipMesh(mesh_to_cut, clip_mesh, progress_callback=NullCallback()):
 
     number_of_faces = len(mesh_to_cut.getFaces())
     for i, face in enumerate(mesh_to_cut.getFaces()):
-        progress_callback(Progress(progress=i, message="Creating heightmap", max_progress=number_of_faces))
+        progress_callback(Progress(progress=i, message="Cutting mesh", max_progress=number_of_faces))
         mesh_vertices = [mesh_to_cut.getVertex(index).position for index in face]
         polygon_to_clip = clip_polygon.Polygon(mesh_vertices)
 
@@ -55,5 +55,6 @@ def clipMesh(mesh_to_cut, clip_mesh, progress_callback=NullCallback()):
                 return_mesh.addFaceFromVertices([mesh.MeshVertex(np.array(point)) for point in clipped_polygon.points])
                 add_vertex_time += time.time() - add_vertex_time_start
 
+    progress_callback(Progress(progress=1.0, message="Removing duplicate vertices"))
     return_mesh.removeDuplicates()
     return return_mesh
