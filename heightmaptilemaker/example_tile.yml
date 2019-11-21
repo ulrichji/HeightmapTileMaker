@@ -1,0 +1,43 @@
+# geoTiff is the currently supported file format. The folder provided must contain
+# geoTiff files, as all will be loaded by the program.
+tiff-directory: D:/Files/heightmaps/Helldalisen_DTM_1m/data/dtm/
+
+# The geocoordinates of the top left of the tile (0,0 coordinate) in the same format as the tiff files.
+# Note that this is not necessarily Lat-long coordinates. Example dataset is UTM33
+geo-top-left:
+    east: 513428
+    north: 7509110
+# The geocoordinates of the top right of the tile (1, 0 coordinate) in the same format as the tiff files.
+geo-top-right:
+    east: 519330
+    north: 7509279
+
+# This is the actual distance between the top-left and top-right points
+# This is required to scale the height of the heightmap accordingly.
+# The unit of this value must then be the same as the unit of the height
+# in the tiff files. This value can typically be found by some mapping
+# tool that can compute distance between two points in geo-coordinates.
+# In this example, the height is measured in meters.
+geo-distance: 6960
+
+# The size of the tile relative to the geo-top-left and geo-top-right.
+# The base distance between geo-top-left and geo-top-right is 1,
+# so this is a scaling factor.
+# This is optional and defaults to 1
+size: 9
+
+# Note that this parameter can be overridden by input arguments to the
+# program.
+output-path: example.obj
+
+# This is the number of points in x direction of the tile mesh.
+# This is optional and defaults to 1024
+mesh-resolution-x: 1024
+# This is the number of points in y direction of the tile mesh.
+# This is optional and defaults to 1024
+mesh-resolution-y: 1024
+
+# This is the thickness. This should be in the same unit as the size paramter.
+# This defaults to size/10. Note that this is measured from the zero-level of the
+# tile (typically sea-level when height is measured in meters on standard maps)
+tile-thickness: 0.1
