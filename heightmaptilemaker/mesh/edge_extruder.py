@@ -23,9 +23,7 @@ class EdgeExtruder:
         self.thickness = thickness
 
     def extrudeMesh(self, mesh):
-        print('Finding boundary edges')
         index_edges = self.__getBoundaryEdges(mesh)
-        print('Extruding edges')
         self.__extrudeEdges(index_edges, mesh)
 
         return mesh
@@ -45,7 +43,6 @@ class EdgeExtruder:
         return boundary_edges
 
     def __extrudeEdges(self, index_edges, mesh):
-        print('Adding vertices')
         vertex_index_map = {}
         for index_edge in index_edges:
             if index_edge.from_index not in vertex_index_map:
@@ -55,11 +52,9 @@ class EdgeExtruder:
                 new_vertex_index = self.__addVertexFromIndex(index_edge.to_index, mesh)
                 vertex_index_map[index_edge.to_index] = new_vertex_index
 
-        print('Computing centroid')
         bottom_center_vertex = self.__computeVertexIndexCentroid(list(vertex_index_map.values()), mesh)
         bottom_center_vertex_index = mesh.addVertex(MeshVertex(position=bottom_center_vertex))
 
-        print('Adding faces')
         for index_edge in index_edges:
             quad_a = index_edge.from_index
             quad_b = index_edge.to_index

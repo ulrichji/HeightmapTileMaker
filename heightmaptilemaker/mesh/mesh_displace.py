@@ -1,13 +1,16 @@
+from progress.null_callback import NullCallback
+from progress.progress import Progress
 
 class MeshDisplace:
     def __init__(self):
         pass
 
-    def displaceMesh(self, mesh, displacement_map):
+    def displaceMesh(self, mesh, displacement_map, progress_callback=NullCallback()):
         self.mesh = mesh
         self.displacement_map = displacement_map
 
-        for vertex in mesh.vertices:
+        for i, vertex in enumerate(mesh.vertices):
+            progress_callback(Progress(i + 1, message='Displacing vertex', max_progress=len(mesh.vertices)))
             self.__displaceVertex(vertex)
 
     def __displaceVertex(self, vertex):
