@@ -1,98 +1,34 @@
 from . import geo_utils
 
-import gdal
+class GeoRaster:
+    def __init__(self, raster_grid):
+        self.raster_grid = raster_grid
+        self.raster_shape = raster_grid.getRasterShape()
+        self.geo_transform = raster_grid.getGeoTransform()
 
-import glob
-import struct
+    def getValueAtPosition(self, geo_x, geo_y):
+        pixel_x, pixel_y = self.geo_transform.transformGeoLocationToPixelLocation(geo_x, geo_y)
 
-class RasterBandBoundaries:
-    def __init__(self, gdal_raster_band, gdal_geo_transform):
-        self.transform = gdal_geo_transform
-        self.width_pixels = gdal_raster_band.XSize
-        self.height_pixels = gdal_raster_band.YSize
+        if self._locationInBounds(pixel_x, pixel_y):
+            return self.raster_grid.getValueAt(pixel_x, pixel_y)
+        return None
 
-    def locationInBounds(self, geo_x, geo_y):
-        pixel_x, pixel_y = self.transform.transformGeoLocationToPixelLocation(geo_x, geo_y)
-        if pixel_x >= 0 and pixel_x < self.width_pixels and pixel_y >= 0 and pixel_y < self.height_pixels:
+    def _locationInBounds(self, pixel_x, pixel_y):
+        raster_width = self.raster_shape[0]
+        raster_height = self.raster_shape[1]
+
+        if pixel_x >= 0 and pixel_x < raster_width and pixel_y >= 0 and pixel_y < raster_height:
             return True
         return False
 
-class RasterBandReader:
-    def __init__(self, gdal_raster_band):
-        self.gdal_raster_band = gdal_raster_band
+class MultiGeoRaster:
+    def __init__(self, raster_grid_list):
+        self.raster_list = [GeoRaster(raster) for raster in raster_grid_list]
 
-    def readPixelAt(self, pixel_x, pixel_y):
-        raw_elevation = self.gdal_raster_band.ReadRaster(xoff=pixel_x,
-                                                         yoff=pixel_y,
-                                                         xsize=1,
-                                                         ysize=1,
-                                                         buf_xsize=1,
-                                                         buf_ysize=1,
-                                                         buf_type=gdal.GDT_Float32)
-        try:
-            return geo_utils.rawRasterToFloat(raw_elevation, 1)[0]
-        except struct.error as e:
-            print(e)
-            raise Exception("The following error occured when converting pixel (" +
-                str(raw_elevation) + ")  at " + str(pixel_x) + " " + str(pixel_y) + ":\n" + str(e))
+    def getValueAtPosition(self, geo_x, geo_y):
+        for raster in self.raster_list:
+            raster_value = raster.getValueAtPosition(geo_x, geo_y)
+            if raster_value is not None:
+                return raster_value
 
-class RasterBand:
-    def __init__(self, gdal_raster_band, geo_transform):
-        self.geo_transform = geo_utils.GdalGeoTransform(geo_transform)
-        self.boundaries = RasterBandBoundaries(gdal_raster_band, self.geo_transform)
-        self.raster_band_reader = RasterBandReader(gdal_raster_band)
-
-    def locationInBounds(self, geo_x, geo_y):
-        return self.boundaries.locationInBounds(geo_x, geo_y)
-
-    def getElevationAt(self, geo_x, geo_y):
-        pixel_x, pixel_y = self.geo_transform.transformGeoLocationToPixelLocation(geo_x, geo_y)
-        elevation_value = self.raster_band_reader.readPixelAt(int(pixel_x), int(pixel_y))
-        return elevation_value
-
-class RasterFile:
-    def __init__(self, raster_file_path, nodata_value=None):
-        self.file_path = raster_file_path
-        self.dataset = gdal.Open(raster_file_path)
-        self.nodata_value = None
-        self.gdal_nodata_value = -32767.0
-        self.raster_bands = [RasterBand(band, self.dataset.GetGeoTransform()) for band in
-                                (self.dataset.GetRasterBand(i+1) for i in range(self.dataset.RasterCount))]
-
-    def __del__(self):
-        # Yes... This does close the dataset file
-        self.dataset = None
-
-    def locationInBounds(self, geo_x, geo_y):
-        for raster_band in self.raster_bands:
-            if(raster_band.locationInBounds(geo_x, geo_y)):
-                return True
-        return False
-
-    def getElevationAt(self, geo_x, geo_y):
-        for raster_band in self.raster_bands:
-            if(raster_band.locationInBounds(geo_x, geo_y)):
-                elevation = raster_band.getElevationAt(geo_x, geo_y)
-                if elevation > self.gdal_nodata_value:
-                    return elevation
-        return self.nodata_value
-
-# TODO: Handle NOVALUE etc
-class RasterLookup:
-    def __init__(self, file_list, nodata_value=None):
-        self.raster_files = [RasterFile(f, nodata_value) for f in file_list]
-        self.nodata_value = nodata_value
-
-    def locationInBounds(self, geo_x, geo_y):
-        for raster_file in self.raster_files:
-            if(raster_file.locationInBounds(geo_x, geo_y)):
-                return True
-        return False
-
-    def getElevationAtPosition(self, geo_x, geo_y):
-        for raster_file in self.raster_files:
-            if(raster_file.locationInBounds(geo_x, geo_y)):
-                elevation = raster_file.getElevationAt(geo_x, geo_y)
-                if elevation is not self.nodata_value:
-                    return elevation
-        return self.nodata_value
+        return None

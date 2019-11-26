@@ -9,6 +9,8 @@ from mesh.edge_extruder import EdgeExtruder
 from mesh.export import obj_mesh
 
 from geo import geo_utils
+from geo import geotiff_raster
+from geo import raster_lookup
 
 from heightmap.heightmap_displacement_lookup import HeightmapDisplaceLookup
 
@@ -62,7 +64,7 @@ class TileConfig:
         self.output_path = yaml_parser.optionalValue('output-path', None)
         self.mesh_resolution_x = yaml_parser.optionalValue('mesh-resolution-x', default_value=1024)
         self.mesh_resolution_y = yaml_parser.optionalValue('mesh-resolution-y', default_value=1024)
-        self.tile_thickness = yaml_parser.optionalValue('tile_thickness', default_value=self.size/10)
+        self.tile_thickness = yaml_parser.optionalValue('tile-thickness', default_value=self.size/10)
 
         self.geo_top_left = (self.geo_top_left_east, self.geo_top_left_north)
         self.geo_top_right = (self.geo_top_right_east, self.geo_top_right_north)
@@ -90,8 +92,10 @@ def createTileFromTileConfig(tile_config):
         tile_config.geo_top_left, tile_config.geo_top_right, (1, 1))
 
     progress_printer(Progress(0.55, "Loading geotiff files"))
+    raster_files = geotiff_raster.createRastersFromFiles(findGeoTiffFiles(tile_config.tiff_directory))
+    heightmap_raster = raster_lookup.MultiGeoRaster(raster_files)
     displacement_lookup = HeightmapDisplaceLookup(
-        findGeoTiffFiles(tile_config.tiff_directory),
+        heightmap_raster,
         geo_transform.transform_parameters,
         1/tile_config.geo_distance)
 
