@@ -96,7 +96,7 @@ def createTileFromTileConfig(tile_config):
     heightmap_raster = raster_lookup.MultiGeoRaster(raster_files)
     displacement_lookup = HeightmapDisplaceLookup(
         heightmap_raster,
-        geo_transform.transform_parameters,
+        geo_transform,
         1/tile_config.geo_distance)
 
     mesh_displace_callback = progress.callback.Callback(progress_printer, start_at=0.60, end_at=0.89, message='Computing tile displacement')

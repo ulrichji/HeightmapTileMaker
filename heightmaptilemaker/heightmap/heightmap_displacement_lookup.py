@@ -9,7 +9,7 @@ class HeightmapDisplaceLookup:
         self.height_scaledown = height_scaledown
 
     def getDisplacementAt(self, x, y):
-        geo_x, geo_y = geo_utils.xyIndexToCoordinate((x, y), self.geo_transform)
+        geo_x, geo_y = self.geo_transform.transformPixelLocationToGeoLocation(x, y)
         displacement = self.raster_lookup.getValueAtPosition(geo_x, geo_y) or 0.0
         displacement_scaled = displacement * self.height_scaledown
 

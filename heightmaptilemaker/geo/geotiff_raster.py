@@ -1,4 +1,5 @@
 from . import geo_utils
+from . import transform
 
 import gdal
 
@@ -37,7 +38,7 @@ class GeotiffRasterBandBoundaries:
 
 class GeotiffRasterBand:
     def __init__(self, gdal_raster_band, geo_transform):
-        self.geo_transform = geo_utils.GdalGeoTransform(geo_transform)
+        self.geo_transform = transform.GeoTransform(geo_transform)
         self.boundaries = GeotiffRasterBandBoundaries(gdal_raster_band)
         self.raster_band_reader = RasterBandReader(gdal_raster_band)
         self.width = gdal_raster_band.XSize
@@ -73,7 +74,7 @@ class GeotiffRasterFile:
         return (width, height)
 
     def getGeoTransform(self):
-        return geo_utils.GdalGeoTransform(self.geo_transform)
+        return transform.GeoTransform(self.geo_transform)
 
     def getValueAt(self, pixel_x, pixel_y):
         for raster_band in self.raster_bands:
