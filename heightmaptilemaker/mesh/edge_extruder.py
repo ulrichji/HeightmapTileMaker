@@ -53,7 +53,7 @@ class EdgeExtruder:
                 vertex_index_map[index_edge.to_index] = new_vertex_index
 
         bottom_center_vertex = self.__computeVertexIndexCentroid(list(vertex_index_map.values()), mesh)
-        bottom_center_vertex_index = mesh.addVertex(MeshVertex(position=bottom_center_vertex))
+        bottom_center_vertex_index = mesh.addVertex(MeshVertex(position=bottom_center_vertex, uv_coord=(0, 0)))
 
         for index_edge in index_edges:
             quad_a = index_edge.from_index

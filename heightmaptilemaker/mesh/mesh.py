@@ -171,13 +171,13 @@ class Mesh:
         return len(self.vertices)
 
     def getVerticesPositions(self):
-        return [vertex.position for vertex in self.vertices]
+        return [vertex.position for vertex in self.vertices if vertex.position is not None]
 
     def getVerticesUVCoords(self):
-        return None
+        return [vertex.uv_coord for vertex in self.vertices if vertex.uv_coord is not None]
 
     def getVerticesNormals(self):
-        return None
+        return [vertex.normal for vertex in self.vertices if vertex.normal is not None]
 
     def getFaces(self):
         return [[index for index in face.indices] for face in self.faces]

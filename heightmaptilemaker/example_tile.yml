@@ -24,11 +24,11 @@ geo-distance: 6960
 # The base distance between geo-top-left and geo-top-right is 1,
 # so this is a scaling factor.
 # This is optional and defaults to 1
-size: 9
+size: 10
 
 # Note that this parameter can be overridden by input arguments to the
 # program.
-output-path: example.obj
+output-path: 3D-tiles/helldalisen.obj
 
 # This is the number of points in x direction of the tile mesh.
 # This is optional and defaults to 1024
@@ -40,4 +40,28 @@ mesh-resolution-y: 1024
 # This is the thickness. This should be in the same unit as the size paramter.
 # This defaults to size/10. Note that this is measured from the zero-level of the
 # tile (typically sea-level when height is measured in meters on standard maps)
-tile-thickness: 0.1
+tile-thickness: 0.5
+
+# This is an optional overlay texture of the 3D model. The input image
+# will be projected onto the new image indicated by the result path by applying
+# the specified geo-transform. The input-geo transform is for the input image,
+# as the output image will match the 3D model.
+texture:
+    # The path to the input texture.
+    path: textures/helldalisen_texture.png
+    # The 3D-model aligned texture that will be generated.
+    result-path: 3D-tiles/helldalisen_aligned.png
+    # The top left corner of the input image in the same coordinate system as
+    # the geotiff files.
+    geo-top-left:
+        east: 512767
+        north: 7510567
+    # The top left right corner of the input image in the same coordinate system as
+    # the geotiff files.
+    geo-top-right:
+        east: 520367
+        north: 7510567
+    # The image width of the output texture that is aligned with the 3D model.
+    resolution-x: 1024
+    # The image height of the output texture that is aligned with the 3D model.
+    resolution-y: 1024

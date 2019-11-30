@@ -7,12 +7,17 @@ from mesh.mesh_clipper import clipMesh, getHexagon
 from mesh.mesh_displace import MeshDisplace
 from mesh.edge_extruder import EdgeExtruder
 from mesh.export import obj_mesh
+from mesh.uv_projection import UVProjector
 
 from geo import geo_utils
 from geo import geotiff_raster
 from geo import raster_lookup
+from geo import image_creator
+from geo import image_raster
 
 from heightmap.heightmap_displacement_lookup import HeightmapDisplaceLookup
+
+from PIL import Image
 
 import yaml
 import glob
@@ -49,6 +54,15 @@ class YAMLFileParser:
             return default_value
         return element[value_name]
 
+    def optionalValues(self, default_value, first_value, *args):
+        current_element = self.optionalValue(first_value, None)
+        for arg in args:
+            if current_element is None:
+                return default_value
+            current_element = self.optionalValue(arg, None, current_element)
+
+        return current_element or default_value
+
 
 class TileConfig:
     def __init__(self, yaml_file_path):
@@ -65,9 +79,19 @@ class TileConfig:
         self.mesh_resolution_x = yaml_parser.optionalValue('mesh-resolution-x', default_value=1024)
         self.mesh_resolution_y = yaml_parser.optionalValue('mesh-resolution-y', default_value=1024)
         self.tile_thickness = yaml_parser.optionalValue('tile-thickness', default_value=self.size/10)
+        self.texture_path = yaml_parser.optionalValues(None, 'texture', 'path')
+        self.texture_result_path = yaml_parser.optionalValues(None, 'texture', 'result-path')
+        self.texture_geo_top_left_east = yaml_parser.optionalValues(None, 'texture', 'geo-top-left', 'east')
+        self.texture_geo_top_left_north = yaml_parser.optionalValues(None, 'texture', 'geo-top-left', 'north')
+        self.texture_geo_top_right_east = yaml_parser.optionalValues(None, 'texture', 'geo-top-right', 'east')
+        self.texture_geo_top_right_north = yaml_parser.optionalValues(None, 'texture', 'geo-top-right', 'north')
+        self.texture_resolution_x = yaml_parser.optionalValues(512, 'texture', 'resolution-x')
+        self.texture_resolution_y = yaml_parser.optionalValues(512, 'texture', 'resolution-y')
 
         self.geo_top_left = (self.geo_top_left_east, self.geo_top_left_north)
         self.geo_top_right = (self.geo_top_right_east, self.geo_top_right_north)
+        self.texture_geo_top_left = (self.texture_geo_top_left_east, self.texture_geo_top_left_north)
+        self.texture_geo_top_right = (self.texture_geo_top_right_east, self.texture_geo_top_right_north)
 
     def __str__(self):
         return yaml.dump(self)
@@ -102,6 +126,26 @@ def createTileFromTileConfig(tile_config):
     mesh_displace_callback = progress.callback.Callback(progress_printer, start_at=0.60, end_at=0.89, message='Computing tile displacement')
     MeshDisplace().displaceMesh(clipped_mesh, displacement_lookup, mesh_displace_callback)
 
+    progress_printer(Progress(0.501, "Creating uv coordinates"))
+    UVProjector().topViewProject(clipped_mesh)
+
+    progress_printer(Progress(0.8999, 'Creating texture'))
+    input_texture_image = Image.open(tile_config.texture_path)
+    output_texture_image = Image.new('RGB', (tile_config.texture_resolution_x, tile_config.texture_resolution_y))
+    #input_image_size = [dim / min(input_texture_image.size) for dim in input_texture_image.size]
+
+    input_image_geo_transform = geo_utils.computeGdalGeoTransformFrom2Points(tile_config.texture_geo_top_left, tile_config.texture_geo_top_right, input_texture_image.size)
+    output_texture_geo_transform = geo_utils.computeGdalGeoTransformFrom2Points(tile_config.geo_top_left, tile_config.geo_top_right, output_texture_image.size)
+
+    #texture_geo_transform = geo_utils.computeGdalGeoTransformFrom2Points(
+    #    tile_config.texture_geo_top_left, tile_config.texture_geo_top_right, input_image_size)
+    output_texture = image_raster.ImageRaster(output_texture_image, output_texture_geo_transform)
+    input_texture = image_raster.ImageRaster(input_texture_image, input_image_geo_transform)
+    image_maker = image_creator.ImageCreator(input_texture, output_texture)
+    progress_printer(Progress(0.8999, 'Creating image'))
+    image_maker.createImage()
+    output_texture_image.save(tile_config.texture_result_path)
+
     progress_printer(Progress(0.9, 'Scaling mesh'))
     clipped_mesh.scale(tile_config.size)
 
@@ -110,7 +154,7 @@ def createTileFromTileConfig(tile_config):
     extruder.extrudeMesh(clipped_mesh)
 
     progress_printer(Progress(0.97, 'Converting to obj'))
-    obj_exporter = obj_mesh.ObjMesh(mesh=clipped_mesh, object_name='Heightmap tile')
+    obj_exporter = obj_mesh.ObjMesh(mesh=clipped_mesh, object_name='Heightmap tile', texture_path=tile_config.texture_result_path)
     obj_exporter.save(tile_config.output_path)
 
     progress_printer.finish()
