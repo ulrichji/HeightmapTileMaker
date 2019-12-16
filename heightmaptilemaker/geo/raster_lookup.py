@@ -8,7 +8,10 @@ class GeoRaster:
 
     def getValueAtPosition(self, geo_x, geo_y):
         pixel_x, pixel_y = self.geo_transform.transformGeoLocationToPixelLocation(geo_x, geo_y)
+        return self._getPixelAtLocation(pixel_x, pixel_y)
 
+
+    def _getPixelAtLocation(self, pixel_x, pixel_y):
         if self._locationInBounds(pixel_x, pixel_y):
             return self.raster_grid.getValueAt(pixel_x, pixel_y)
         return None

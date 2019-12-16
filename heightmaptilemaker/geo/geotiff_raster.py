@@ -48,7 +48,7 @@ class GeotiffRasterBand:
         return self.boundaries.locationInBounds(pixel_x, pixel_y)
 
     def getElevationAt(self, pixel_x, pixel_y):
-        elevation_value = self.raster_band_reader.readPixelAt(int(pixel_x), int(pixel_y))
+        elevation_value = self.raster_band_reader.readPixelAt(pixel_x, pixel_y)
         return elevation_value
 
     def getBoundaries(self):
@@ -84,5 +84,64 @@ class GeotiffRasterFile:
                     return elevation
         return self.nodata_value
 
+from math import floor, ceil
+class BilinearInterpolation:
+    def __init__(self, raster):
+        self.raster = raster
+
+    def getRasterShape(self):
+        return self.raster.getRasterShape()
+
+    def getGeoTransform(self):
+        return self.raster.getGeoTransform()
+
+    def getValueAt(self, x, y):
+        f = self.__getRasterValueAndCheckBoundaries
+        x1 = floor(x)
+        y1 = floor(y)
+        x2 = ceil(x)
+        y2 = ceil(y)
+
+        divisor = (x2 - x1) * (y2 - y1)
+
+        f11 = f(x1, y1)
+        f21 = f(x2, y1)
+        f12 = f(x1, y2)
+        f22 = f(x2, y2)
+
+        if abs(divisor) < 1e-9 or f11 is None or f21 is None or f12 is None or f22 is None:
+            return f11 or f21 or f12 or f22 or None
+
+        height_value = (1 / divisor) * (
+            f11 * (x2 - x) * (y2 - y) +
+            f21 * (x - x1) * (y2 - y) +
+            f12 * (x2 - x) * (y - y1) +
+            f22 * (x - x1) * (y - y1))
+
+        return height_value
+
+    def __getRasterValueAndCheckBoundaries(self, x, y):
+        if self.__isInBounds(x, y):
+            return self.raster.getValueAt(x, y)
+        else:
+            return None
+
+    def __isInBounds(self, x, y):
+        shape = self.getRasterShape()
+        return x >= 0 and y >= 0 and x < shape[0] and y < shape[1]
+
+class FloorInterpolation:
+    def __init__(self, raster):
+        self.raster = raster
+
+    def getRasterShape(self):
+        return self.raster.getRasterShape()
+
+    def getGeoTransform(self):
+        return self.raster.getGeoTransform()
+
+    def getValueAt(self, pixel_x, pixel_y):
+        return self.raster.getValueAt(int(pixel_x), int(pixel_y))
+
 def createRastersFromFiles(file_list, nodata_value=None):
-    return [GeotiffRasterFile(f, nodata_value=nodata_value) for f in file_list]
+    return [BilinearInterpolation(GeotiffRasterFile(f, nodata_value=nodata_value)) for f in file_list]
