@@ -24,7 +24,6 @@ import glob
 
 class ConfigValueNotFound(Exception):
     def __init__(self, message, file_path):
-        # Call the base class constructor with the parameters it needs
         super(ValidationError, self).__init__('A configuration value was not found in config file \"' + str(file_path) + '\" :' + message)
 
 class YAMLFileParser:
@@ -79,6 +78,8 @@ class TileConfig:
         self.mesh_resolution_x = yaml_parser.optionalValue('mesh-resolution-x', default_value=1024)
         self.mesh_resolution_y = yaml_parser.optionalValue('mesh-resolution-y', default_value=1024)
         self.tile_thickness = yaml_parser.optionalValue('tile-thickness', default_value=self.size/10)
+        self.elevation_multiplier = yaml_parser.optionalValue('elevation-multiplier', default_value=1.0)
+
         self.texture_path = yaml_parser.optionalValues(None, 'texture', 'path')
         self.texture_result_path = yaml_parser.optionalValues(None, 'texture', 'result-path')
         self.texture_geo_top_left_east = yaml_parser.optionalValues(None, 'texture', 'geo-top-left', 'east')
@@ -118,10 +119,11 @@ def createTileFromTileConfig(tile_config):
     progress_printer(Progress(0.55, "Loading geotiff files"))
     raster_files = geotiff_raster.createRastersFromFiles(findGeoTiffFiles(tile_config.tiff_directory))
     heightmap_raster = raster_lookup.MultiGeoRaster(raster_files)
+    elevation_multiplier = tile_config.elevation_multiplier * (1 / tile_config.geo_distance)
     displacement_lookup = HeightmapDisplaceLookup(
         heightmap_raster,
         geo_transform,
-        1/tile_config.geo_distance)
+        elevation_multiplier)
 
     mesh_displace_callback = progress.callback.Callback(progress_printer, start_at=0.60, end_at=0.89, message='Computing tile displacement')
     MeshDisplace().displaceMesh(clipped_mesh, displacement_lookup, mesh_displace_callback)
@@ -132,13 +134,10 @@ def createTileFromTileConfig(tile_config):
     progress_printer(Progress(0.8999, 'Creating texture'))
     input_texture_image = Image.open(tile_config.texture_path)
     output_texture_image = Image.new('RGB', (tile_config.texture_resolution_x, tile_config.texture_resolution_y))
-    #input_image_size = [dim / min(input_texture_image.size) for dim in input_texture_image.size]
 
     input_image_geo_transform = geo_utils.computeGdalGeoTransformFrom2Points(tile_config.texture_geo_top_left, tile_config.texture_geo_top_right, input_texture_image.size)
     output_texture_geo_transform = geo_utils.computeGdalGeoTransformFrom2Points(tile_config.geo_top_left, tile_config.geo_top_right, output_texture_image.size)
 
-    #texture_geo_transform = geo_utils.computeGdalGeoTransformFrom2Points(
-    #    tile_config.texture_geo_top_left, tile_config.texture_geo_top_right, input_image_size)
     output_texture = image_raster.ImageRaster(output_texture_image, output_texture_geo_transform)
     input_texture = image_raster.ImageRaster(input_texture_image, input_image_geo_transform)
     image_maker = image_creator.ImageCreator(input_texture, output_texture)
