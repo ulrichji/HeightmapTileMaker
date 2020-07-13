@@ -1,6 +1,6 @@
 # geoTiff is the currently supported file format. The folder provided must contain
 # geoTiff files, as all will be loaded by the program.
-tiff-directory: D:/Files/heightmaps/Helldalisen_DTM_1m/data/dtm/
+tiff-directory: "D:/Files/heightmaps/Helldalisen_DTM_1m/data/dtm/"
 
 # The geocoordinates of the top left of the tile (0,0 coordinate) in the same format as the tiff files.
 # Note that this is not necessarily Lat-long coordinates. Example dataset is UTM33
@@ -28,14 +28,14 @@ size: 10
 
 # Note that this parameter can be overridden by input arguments to the
 # program.
-output-path: 3D-tiles/helldalisen.obj
+output-path: "3D-tiles/helldalisen.obj"
 
 # This is the number of points in x direction of the tile mesh.
 # This is optional and defaults to 1024
-mesh-resolution-x: 1024
+mesh-resolution-x: 512
 # This is the number of points in y direction of the tile mesh.
 # This is optional and defaults to 1024
-mesh-resolution-y: 1024
+mesh-resolution-y: 512
 
 # This is the thickness. This should be in the same unit as the size paramter.
 # This defaults to size/10. Note that this is measured from the zero-level of the
@@ -48,9 +48,9 @@ tile-thickness: 0.5
 # as the output image will match the 3D model.
 texture:
     # The path to the input texture.
-    path: textures/helldalisen_texture.png
+    path: "textures/helldalisen_texture.png"
     # The 3D-model aligned texture that will be generated.
-    result-path: 3D-tiles/helldalisen_aligned.png
+    result-path: "3D-tiles/helldalisen_aligned.png"
     # The top left corner of the input image in the same coordinate system as
     # the geotiff files.
     geo-top-left:
@@ -65,3 +65,59 @@ texture:
     resolution-x: 1024
     # The image height of the output texture that is aligned with the 3D model.
     resolution-y: 1024
+
+# Optional list of modifiers. They are represented in a hiearchial manner, and will
+# be applied in a similar manner.
+modifiers:
+    # This will select the mimimum level of all the modifiers.
+    - min:
+        - cone:
+            # Note that center is not considering tile thickness as is measured from
+            # top layer
+            center:
+                x: 0
+                y: 5
+                z: 0
+            base-radius: 1.4
+            top-radius: 11.4
+            height: 10
+        - cone:
+            center:
+                x: 2.5
+                y: 0.66987298107
+                z: 0
+            base-radius: 1.4
+            top-radius: 11.4
+            height: 10
+        - cone:
+            center:
+                x: 7.5
+                y: 0.66987298107
+                z: 0
+            base-radius: 1.4
+            top-radius: 11.4
+            height: 10
+        - cone:
+            center:
+                x: 10
+                y: 5
+                z: 0
+            base-radius: 1.4
+            top-radius: 11.4
+            height: 10
+        - cone:
+            center:
+                x: 7.5
+                y: 9.33012701892
+                z: 0
+            base-radius: 1.4
+            top-radius: 11.4
+            height: 10
+        - cone:
+            center:
+                x: 2.5
+                y: 9.33012701892
+                z: 0
+            base-radius: 1.4
+            top-radius: 11.4
+            height: 10

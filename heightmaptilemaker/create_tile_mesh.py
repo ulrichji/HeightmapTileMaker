@@ -9,5 +9,4 @@ if __name__ == '__main__':
     arguments = argument_parser.parse_args()
 
     tile_config = tile_creator.TileConfig(arguments.input_config)
-
     tile_creator.createTileFromTileConfig(tile_config)
