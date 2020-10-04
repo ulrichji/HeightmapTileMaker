@@ -70,6 +70,13 @@ texture:
 # be applied in a similar manner.
 modifiers:
     # This will select the mimimum level of all the modifiers.
+    - average-circle:
+        center:
+            x: 5
+            y: 5
+        radius: 0.5
+        angle-deg: 70
+
     - min:
         - cone:
             # Note that center is not considering tile thickness as is measured from
@@ -80,7 +87,7 @@ modifiers:
                 z: 0
             base-radius: 1.4
             top-radius: 11.4
-            height: 10
+            height: 20
         - cone:
             center:
                 x: 2.5
@@ -88,7 +95,7 @@ modifiers:
                 z: 0
             base-radius: 1.4
             top-radius: 11.4
-            height: 10
+            height: 20
         - cone:
             center:
                 x: 7.5
@@ -96,7 +103,7 @@ modifiers:
                 z: 0
             base-radius: 1.4
             top-radius: 11.4
-            height: 10
+            height: 20
         - cone:
             center:
                 x: 10
@@ -104,7 +111,7 @@ modifiers:
                 z: 0
             base-radius: 1.4
             top-radius: 11.4
-            height: 10
+            height: 20
         - cone:
             center:
                 x: 7.5
@@ -112,7 +119,7 @@ modifiers:
                 z: 0
             base-radius: 1.4
             top-radius: 11.4
-            height: 10
+            height: 20
         - cone:
             center:
                 x: 2.5
@@ -120,4 +127,83 @@ modifiers:
                 z: 0
             base-radius: 1.4
             top-radius: 11.4
-            height: 10
+            height: 20
+
+        - cube-frustum:
+            center:
+                x: 1.25
+                y: 2.8349364905
+                z: 0
+            rotation: 120
+            height: 20
+            bottom:
+                width: 5
+                height: 0.5
+            top:
+                width: 25
+                height: 20.25
+        - cube-frustum:
+            center:
+                x: 5
+                y: 0.669872981
+                z: 0
+            rotation: 0
+            height: 20
+            bottom:
+                width: 5
+                height: 0.5
+            top:
+                width: 25
+                height: 20.25
+        - cube-frustum:
+            center:
+                x: 8.75
+                y: 2.8349364905
+                z: 0
+            rotation: 60
+            height: 20
+            bottom:
+                width: 5
+                height: 0.5
+            top:
+                width: 25
+                height: 20.25
+        - cube-frustum:
+            center:
+                x: 8.75
+                y: 7.1650635095
+                z: 0
+            rotation: 120
+            height: 20
+            bottom:
+                width: 5
+                height: 0.5
+            top:
+                width: 25
+                height: 20.25
+        - cube-frustum:
+            center:
+                x: 5
+                y: 9.3301270189
+                z: 0
+            rotation: 0
+            height: 20
+            bottom:
+                width: 5
+                height: 0.5
+            top:
+                width: 25
+                height: 20.25
+        - cube-frustum:
+            center:
+                x: 1.25
+                y: 7.1650635095
+                z: 0
+            rotation: 60
+            height: 20
+            bottom:
+                width: 5
+                height: 0.5
+            top:
+                width: 25
+                height: 20.25
