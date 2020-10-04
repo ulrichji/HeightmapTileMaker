@@ -17,6 +17,8 @@ from geo import image_raster
 
 from heightmap.heightmap_displacement_lookup import HeightmapDisplaceLookup
 
+import modifiers.modifiers_loader
+
 from PIL import Image
 
 import yaml
@@ -89,6 +91,8 @@ class TileConfig:
         self.texture_resolution_x = yaml_parser.optionalValues(512, 'texture', 'resolution-x')
         self.texture_resolution_y = yaml_parser.optionalValues(512, 'texture', 'resolution-y')
 
+        self.modifiers = yaml_parser.optionalValue('modifiers', default_value=[])
+
         self.geo_top_left = (self.geo_top_left_east, self.geo_top_left_north)
         self.geo_top_right = (self.geo_top_right_east, self.geo_top_right_north)
         self.texture_geo_top_left = (self.texture_geo_top_left_east, self.texture_geo_top_left_north)
@@ -101,6 +105,8 @@ def findGeoTiffFiles(directory):
     return glob.glob(directory + "/*.tif")
 
 def createTileFromTileConfig(tile_config):
+    modifiers_set = modifiers.modifiers_loader.setupModifiersFromParameters(tile_config.modifiers)
+
     progress_printer = progress.default_printer.Printer()
 
     progress_printer(Progress(0.0, "Creating grid mesh " + str(tile_config.mesh_resolution_x) + "x" + str(tile_config.mesh_resolution_y)))
@@ -147,6 +153,9 @@ def createTileFromTileConfig(tile_config):
 
     progress_printer(Progress(0.9, 'Scaling mesh'))
     clipped_mesh.scale(tile_config.size)
+
+    progress_printer(Progress(0.92, 'Applying modifiers'))
+    modifiers_set.apply_modifiers_to_mesh(clipped_mesh)
 
     progress_printer(Progress(0.93, 'Extruding tile edges'))
     extruder = EdgeExtruder(thickness=tile_config.tile_thickness)

@@ -8,6 +8,11 @@ class MeshVertex:
         self.uv_coord = uv_coord
         self.normal = normal
 
+    def set_from(self, other):
+        self.position = [c for c in other.position] if other.position else None
+        self.uv_coord = [c for c in other.uv_coord] if other.uv_coord else None
+        self.normal = [c for c in other.normal] if other.normal else None
+
     def copy(self):
         return MeshVertex(self.position, self.uv_coord, self.normal)
 
